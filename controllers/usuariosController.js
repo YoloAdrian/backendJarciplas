@@ -1,4 +1,6 @@
+const axios = require('axios');
 const Usuario = require('../models/usuariosModel');
+
 
 // Obtener todos los usuarios
 const obtenerUsuarios = async (req, res) => {
@@ -61,4 +63,6 @@ module.exports = {
   obtenerUsuarios,
   obtenerUsuarioPorId,
   crearUsuario,
-};
+  
+}; 
+

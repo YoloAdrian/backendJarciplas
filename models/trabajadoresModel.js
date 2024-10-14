@@ -36,7 +36,7 @@ const Trabajador = sequelize.define('Trabajador', {
       key: 'id_trabajadores',
     },
   },
-  contraseña: {
+  Contraseña: {
     type: DataTypes.STRING(18),
     allowNull: false,
   },

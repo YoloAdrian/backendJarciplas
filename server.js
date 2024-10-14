@@ -8,6 +8,7 @@ const trabajadorRoutes = require('./routes/trabajadoresRoutes');
 const usuarioRoutes = require('./routes/usuariosRoutes');
 const tipoInformacionEmpresa = require('./routes/tipoInformacionEmpresaRoutes');
 const informacionEmpresa = require('./routes/informacionEmpresaRoutes');
+const captcha = require('./routes/captchaRoutes')
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api', trabajadorRoutes);
 app.use('/api', usuarioRoutes);
 app.use('/api', informacionEmpresa);
 app.use('/api', tipoInformacionEmpresa);
+app.use('/api', captcha);
 
 // Conexión a la base de datos
 sequelize.sync().then(() => {
