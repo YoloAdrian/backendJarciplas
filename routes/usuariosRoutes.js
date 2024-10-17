@@ -6,6 +6,7 @@ const usuarioController = require('../controllers/usuariosController');
 router.get('/usuarios', usuarioController.obtenerUsuarios);
 router.get('/usuarios/:id', usuarioController.obtenerUsuarioPorId);
 router.post('/usuarios', usuarioController.crearUsuario);
+router.post('/usuarios/iniciar_sesion', usuarioController.iniciarSesionUsuario);
 
 
 module.exports = router;

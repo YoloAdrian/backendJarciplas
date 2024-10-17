@@ -40,6 +40,10 @@ const Trabajador = sequelize.define('Trabajador', {
     type: DataTypes.STRING(18),
     allowNull: false,
   },
+  id_sesion: {
+    type: DataTypes.STRING(255),  
+    allowNull: true, 
+  },
 }, {
   tableName: 'tbl_trabajadores',
   timestamps: false,

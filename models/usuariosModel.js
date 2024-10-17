@@ -39,6 +39,10 @@ const Usuario = sequelize.define('Usuario', {
     type: DataTypes.STRING(18),
     allowNull: false,
   },
+  id_sesion: {
+    type: DataTypes.STRING(255),  
+    allowNull: true, 
+  },
 }, {
   tableName: 'tbl_usuarios',
   timestamps: false,
