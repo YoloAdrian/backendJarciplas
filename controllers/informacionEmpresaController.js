@@ -11,6 +11,21 @@ const obtenerInformacion = async (req, res) => {
   }
 };
 
+const obtenerInformacionPorId = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const informacion = await Informacion.findByPk(id);
+    if (!informacion) {
+      return res.status(404).json({ message: 'Información no encontrada' });
+    }
+    res.json(informacion);
+  } catch (error) {
+    console.error('Error al obtener la información:', error);
+    res.status(500).json({ message: 'Error interno al obtener la información' });
+  }
+};
+
 // Crear nueva información
 const crearInformacion = async (req, res) => {
   const { id_tipo_informacion, informacion } = req.body;
@@ -89,5 +104,6 @@ module.exports = {
   crearInformacion,
   editarInformacion,
   eliminarInformacion,
-  eliminarCampoInformacion, // Agregamos esta función a los exports
+  eliminarCampoInformacion, 
+  obtenerInformacionPorId,
 };
