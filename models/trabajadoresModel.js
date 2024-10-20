@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const TipoTrabajador = require('./tipo_trabajadorModel');
-
+const TipoUsuario = require('./tipo_UsuarioModel'); // Cambiado a TipoUsuario
 
 const Trabajador = sequelize.define('Trabajador', {
   id_trabajador: {
@@ -26,27 +25,36 @@ const Trabajador = sequelize.define('Trabajador', {
     allowNull: false,
   },
   telefono: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING(15),
     allowNull: false,
   },
-  id_tipo_trabajador: {
+  id_tipo_trabajador: {  // Cambiado de id_tipo_trabajador a id_tipo_usuario
     type: DataTypes.INTEGER,
     references: {
-      model: TipoTrabajador,
-      key: 'id_trabajadores',
+      model: TipoUsuario, // Cambiado a TipoUsuario
+      key: 'id_tipo_usuarios', // Asegúrate de que esta clave coincida con la clave primaria en `TipoUsuario`
     },
   },
   Contraseña: {
     type: DataTypes.STRING(18),
     allowNull: false,
   },
+  Intentos_contraseña: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
   id_sesion: {
-    type: DataTypes.STRING(255),  
-    allowNull: true, 
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  bloqueadoHasta: {
+    type: DataTypes.DATE, // Almacena la fecha y hora hasta cuando está bloqueado
+    allowNull: true, // Puede ser nulo cuando no está bloqueado
   },
 }, {
-  tableName: 'tbl_trabajadores',
+  tableName: 'tbl_trabajadores', // Si decides cambiar el nombre de la tabla en la base de datos, cámbialo aquí también
   timestamps: false,
 });
 
 module.exports = Trabajador;
+

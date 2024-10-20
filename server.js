@@ -4,11 +4,13 @@ const cors = require('cors'); // Importa el paquete cors
 const cookieParser = require('cookie-parser'); // Importa el paquete cookie-parser
 const sequelize = require('./config/db');
 
-const tipoTrabajadorRoutes = require('./routes/tipo_trabajadorRoutes');
+const tipoTrabajadorRoutes = require('./routes/tipo_UusuarioRoutes');
 const trabajadorRoutes = require('./routes/trabajadoresRoutes');
 const usuarioRoutes = require('./routes/usuariosRoutes');
 const tipoInformacionEmpresa = require('./routes/tipoInformacionEmpresaRoutes');
 const informacionEmpresa = require('./routes/informacionEmpresaRoutes');
+const FrecuenciaBloqueosUsuarios = require('./routes/FrecuenciaBloqueosUsuariosRoutes');
+const FrecuenciaBloqueosTrabajador = require('./routes//FrecuenciaBloqueosTrabajadoreRoutes');
 const captcha = require('./routes/captchaRoutes');
 
 dotenv.config();
@@ -32,6 +34,8 @@ app.use('/api', usuarioRoutes);
 app.use('/api', informacionEmpresa);
 app.use('/api', tipoInformacionEmpresa);
 app.use('/api', captcha);
+app.use('/api', FrecuenciaBloqueosUsuarios);
+app.use('/api', FrecuenciaBloqueosTrabajador);
 
 // Conexión a la base de datos
 sequelize.sync().then(() => {
