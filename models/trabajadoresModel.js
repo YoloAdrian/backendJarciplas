@@ -24,7 +24,7 @@ const Trabajador = sequelize.define('Trabajador', {
     type: DataTypes.STRING(60),
     allowNull: false,
   },
-  telefono: {
+  Telefono: {
     type: DataTypes.STRING(15),
     allowNull: false,
   },
@@ -50,6 +50,18 @@ const Trabajador = sequelize.define('Trabajador', {
   bloqueadoHasta: {
     type: DataTypes.DATE, // Almacena la fecha y hora hasta cuando está bloqueado
     allowNull: true, // Puede ser nulo cuando no está bloqueado
+  },
+  Edad: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  Genero: {
+    type: DataTypes.STRING(15),
+    allowNull: false,
+  },
+  MFA:{
+    type: DataTypes.STRING(255),
+    allowNull: false,
   },
 }, {
   tableName: 'tbl_trabajadores', // Si decides cambiar el nombre de la tabla en la base de datos, cámbialo aquí también

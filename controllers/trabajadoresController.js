@@ -1,11 +1,14 @@
+const axios = require('axios');
 const Trabajador = require('../models/trabajadoresModel');
 const Usuario = require('../models/usuariosModel');
 const FrecuenciaBloqueos = require('../models/frecuenciaBloqueosTrabajadoresModel');
 const crypto = require('crypto');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
-// Función para generar un ID de sesión único
+
 const generarIdSesion = () => {
-  return crypto.randomBytes(32).toString('hex'); // Genera un ID de 64 caracteres
+  return crypto.randomBytes(32).toString('hex');
 };
 
 const obtenerTrabajadores = async (req, res) => {
@@ -18,7 +21,6 @@ const obtenerTrabajadores = async (req, res) => {
   }
 };
 
-// Obtener trabajador por ID
 const obtenerTrabajadorPorId = async (req, res) => {
   const id = req.params.id;
   try {
@@ -34,41 +36,39 @@ const obtenerTrabajadorPorId = async (req, res) => {
   }
 };
 
-// Crear nuevo trabajador
 const crearTrabajador = async (req, res) => {
-  const { Nombre, Apellido_Paterno, Apellido_Materno, Correo, telefono, id_tipo_trabajador, Contraseña } = req.body;
+  const { Nombre, Apellido_Paterno, Apellido_Materno, Correo, Telefono, id_tipo_trabajador, Contraseña, Edad, Genero } = req.body;
 
   try {
-    // Validar que todos los campos requeridos estén presentes
-    if (!Nombre || !Apellido_Paterno || !Apellido_Materno || !Correo || !telefono || !id_tipo_trabajador || !Contraseña) {
+    if (!Nombre || !Apellido_Paterno || !Apellido_Materno || !Correo || !Telefono || !id_tipo_trabajador || !Contraseña || Edad === undefined || !Genero) {
       return res.status(400).json({ message: 'Todos los campos son requeridos.' });
     }
 
-    // Asegurarse de que el teléfono sea tratado como una cadena
-    const telefonoStr = String(telefono);
-
-    // Generar un ID de sesión único
+    const telefonoStr = String(Telefono);
     const id_sesion = generarIdSesion();
-    
-    // Establecer la cookie de sesión con atributos de seguridad
+    const secret = speakeasy.generateSecret({ length: 20 });
+    const mfaSecret = secret.base32;
+
     res.cookie('sessionId', id_sesion, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
-      maxAge: 24 * 60 * 60 * 1000 // La cookie expira en 24 horas
+      maxAge: 24 * 60 * 60 * 1000
     });
 
-    // Crear el nuevo trabajador incluyendo 'id_sesion' e 'Intentos_contraseña'
     const nuevoTrabajador = await Trabajador.create({
       Nombre,
       Apellido_Paterno,
       Apellido_Materno,
       Correo,
-      telefono: telefonoStr, // Guardar el teléfono como cadena
+      Telefono: telefonoStr,
       id_tipo_trabajador,
       Contraseña,
-      Intentos_contraseña: 0, // Inicializamos a 0 al crear un nuevo trabajador
-      id_sesion // Guardamos el ID de sesión generado
+      Intentos_contraseña: 0,
+      id_sesion,
+      Edad,
+      Genero,
+      MFA: mfaSecret
     });
 
     res.status(201).json(nuevoTrabajador);
@@ -78,19 +78,16 @@ const crearTrabajador = async (req, res) => {
   }
 };
 
-// Iniciar sesión del trabajador
 const iniciarSesionTrabajador = async (req, res) => {
   const { Correo, Contraseña } = req.body;
 
   try {
-    const trabajador = await Trabajador.findOne({ where: { Correo: Correo } });
+    const trabajador = await Trabajador.findOne({ where: { Correo } });
 
-    // Verificar si el trabajador existe
     if (!trabajador) {
       return res.status(401).json({ message: 'Credenciales inválidas.' });
     }
 
-    // Verificar si la cuenta está bloqueada
     if (trabajador.Intentos_contraseña >= 5) {
       const tiempoBloqueoRestante = trabajador.bloqueadoHasta - Date.now();
 
@@ -100,56 +97,38 @@ const iniciarSesionTrabajador = async (req, res) => {
           message: `Cuenta bloqueada. Intenta de nuevo en ${segundosRestantes} segundos.`,
         });
       } else {
-        // Reiniciar intentos fallidos y desbloquear la cuenta
         trabajador.Intentos_contraseña = 0;
         trabajador.bloqueadoHasta = null;
         await trabajador.save();
       }
     }
 
-    // Verificar si la contraseña es correcta
     if (trabajador.Contraseña !== Contraseña) {
-      // Incrementar el contador de intentos fallidos
       trabajador.Intentos_contraseña += 1;
 
-      // Si se alcanzan los 5 intentos fallidos, bloquear la cuenta y registrar el bloqueo
       if (trabajador.Intentos_contraseña >= 5) {
-        trabajador.bloqueadoHasta = Date.now() + 1 * 60 * 1000; // Bloquear por 1 minuto
-        console.log(`La cuenta del trabajador con correo ${Correo} ha sido bloqueada por 1 minuto.`);
-
-        // Guardar el bloqueo en la tabla FrecuenciaBloqueos
+        trabajador.bloqueadoHasta = Date.now() + 1 * 60 * 1000;
         await FrecuenciaBloqueos.create({
           id_trabajadores: trabajador.id_trabajador,
           fecha: new Date(),
         });
-
-        console.log(`Registro de bloqueo creado para el trabajador con ID ${trabajador.id_trabajador}`);
       }
 
-      // Guardar los cambios en la base de datos
       await trabajador.save();
-
-      console.log(`Intentos fallidos: ${trabajador.Intentos_contraseña} para el correo: ${Correo}`);
       return res.status(401).json({ message: 'Credenciales inválidas.' });
     }
 
-    // Si la contraseña es correcta, reiniciar el contador de intentos fallidos
     trabajador.Intentos_contraseña = 0;
     trabajador.bloqueadoHasta = null;
-
-    // Generar un nuevo ID de sesión
     const id_sesion = generarIdSesion();
     trabajador.id_sesion = id_sesion;
-
-    // Guardar el nuevo ID de sesión y el contador reiniciado
     await trabajador.save();
 
-    // Establecer la cookie de sesión
     res.cookie('sessionId', id_sesion, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
-      maxAge: 24 * 60 * 60 * 1000 // La cookie expira en 24 horas
+      maxAge: 24 * 60 * 60 * 1000
     });
 
     res.status(200).json(trabajador);
@@ -163,7 +142,6 @@ const eliminarTrabajador = async (req, res) => {
   const id = req.params.id;
 
   try {
-    // Elimina las referencias en tbl_frecuencia_bloqueos_trabajadores
     await FrecuenciaBloqueos.destroy({ where: { id_trabajadores: id } });
 
     const trabajador = await Trabajador.findByPk(id);
@@ -193,7 +171,6 @@ const cambiarRol = async (req, res) => {
       return res.status(400).json({ message: 'El nuevo tipo de usuario es requerido.' });
     }
 
-    // Crear usuario con los datos del trabajador
     const nuevoUsuario = await Usuario.create({
       Nombre: trabajador.Nombre,
       Apellido_Paterno: trabajador.Apellido_Paterno,
@@ -201,11 +178,12 @@ const cambiarRol = async (req, res) => {
       Edad: trabajador.Edad,
       Genero: trabajador.Genero,
       Correo: trabajador.Correo,
-      Telefono: trabajador.telefono,
+      Telefono: trabajador.Telefono,
       Contraseña: trabajador.Contraseña,
-      Intentos_contraseña: 0,
-      id_sesion: generarIdSesion(),
-      id_tipo_usuario: nuevoTipoUsuario,
+      Intentos_contraseña: trabajador.Intentos_contraseña,
+      id_sesion: trabajador.id_sesion,
+      id_tipo_usuario: trabajador.id_tipo_trabajador,
+      MFA: trabajador.MFA
     });
 
     await trabajador.destroy();
@@ -216,6 +194,68 @@ const cambiarRol = async (req, res) => {
   }
 };
 
+const generarMFAQR = async (req, res) => {
+  const id_trabajador = req.params.id_trabajador;
+
+  try {
+    const trabajador = await Trabajador.findByPk(id_trabajador);
+    if (!trabajador) {
+      return res.status(404).json({ message: 'Trabajador no encontrado.' });
+    }
+
+    const secret = speakeasy.generateSecret({
+      name: 'TuApp (Trabajador)',
+    });
+
+    trabajador.MFA = secret.base32; // Guardar el secreto MFA en el campo correspondiente
+    await trabajador.save();
+
+    QRCode.toDataURL(secret.otpauth_url, (err, dataUrl) => {
+      if (err) {
+        console.error('Error al generar el código QR:', err);
+        return res.status(500).json({ message: 'Error interno al generar el código QR.' });
+      }
+      res.status(200).json({ qrCode: dataUrl });
+    });
+  } catch (error) {
+    console.error('Error al generar MFA:', error);
+    res.status(500).json({ message: 'Error interno al generar MFA.' });
+  }
+};
+
+const verificarTokenMFA = async (req, res) => {
+  const id_trabajador = req.params.id_trabajador; 
+  const { token } = req.body;
+
+  try {
+    const trabajador = await Trabajador.findByPk(id_trabajador);
+    if (!trabajador) {
+      return res.status(404).json({ message: 'Trabajador no encontrado.' });
+    }
+
+    const secret = trabajador.MFA;
+
+    if (!secret) {
+      return res.status(400).json({ message: 'MFA no configurado para este trabajador.' });
+    }
+
+    const tokenValido = speakeasy.totp.verify({
+      secret: secret,
+      encoding: 'base32',
+      token: token,
+    });
+
+    if (tokenValido) {
+      res.status(200).json({ message: 'Autenticación MFA exitosa.' });
+    } else {
+      res.status(401).json({ message: 'Token MFA inválido.' });
+    }
+  } catch (error) {
+    console.error('Error al verificar MFA:', error);
+    res.status(500).json({ message: 'Error interno al verificar MFA.' });
+  }
+};
+
 module.exports = {
   obtenerTrabajadores,
   obtenerTrabajadorPorId,
@@ -223,4 +263,6 @@ module.exports = {
   iniciarSesionTrabajador,
   eliminarTrabajador,
   cambiarRol,
+  generarMFAQR,
+  verificarTokenMFA,
 };

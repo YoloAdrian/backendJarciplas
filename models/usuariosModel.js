@@ -60,6 +60,10 @@ const Usuario = sequelize.define('Usuario', {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  MFA:{
+    type: DataTypes.STRING(255),
+    allowNull: false,
+  },
 }, {
   tableName: 'tbl_usuarios',
   timestamps: false,
