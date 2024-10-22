@@ -5,7 +5,7 @@ const FrecuenciaBloqueos = require('../models/frecuenciaBloqueosTrabajadoresMode
 const crypto = require('crypto');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
-
+const validator = require('validator');
 
 const generarIdSesion = () => {
   return crypto.randomBytes(32).toString('hex');
@@ -22,17 +22,14 @@ const obtenerTrabajadores = async (req, res) => {
 };
 
 const obtenerTrabajadorPorId = async (req, res) => {
-  const id = req.params.id;
   try {
-    const trabajador = await Trabajador.findByPk(id);
-    if (trabajador) {
-      res.json(trabajador);
-    } else {
-      res.status(404).json({ message: 'Trabajador no encontrado' });
+    const trabajador = await Trabajador.findByPk(req.params.id);
+    if (!trabajador) {
+      return res.status(404).json({ mensaje: 'Trabajador no encontrado' });
     }
+    res.status(200).json(trabajador);
   } catch (error) {
-    console.error('Error al obtener el trabajador:', error);
-    res.status(500).json({ message: 'Error interno al obtener el trabajador' });
+    res.status(500).json({ mensaje: 'Error al obtener el trabajador' });
   }
 };
 
@@ -44,7 +41,17 @@ const crearTrabajador = async (req, res) => {
       return res.status(400).json({ message: 'Todos los campos son requeridos.' });
     }
 
-    const telefonoStr = String(Telefono);
+    // Sanitización y validación de entradas
+    const sanitizedNombre = validator.escape(Nombre);
+    const sanitizedApellidoPaterno = validator.escape(Apellido_Paterno);
+    const sanitizedApellidoMaterno = validator.escape(Apellido_Materno);
+    const sanitizedCorreo = validator.normalizeEmail(Correo);
+    const sanitizedTelefono = validator.escape(String(Telefono));
+
+    if (!validator.isEmail(sanitizedCorreo)) {
+      return res.status(400).json({ message: 'Correo electrónico no válido.' });
+    }
+
     const id_sesion = generarIdSesion();
     const secret = speakeasy.generateSecret({ length: 20 });
     const mfaSecret = secret.base32;
@@ -57,11 +64,11 @@ const crearTrabajador = async (req, res) => {
     });
 
     const nuevoTrabajador = await Trabajador.create({
-      Nombre,
-      Apellido_Paterno,
-      Apellido_Materno,
-      Correo,
-      Telefono: telefonoStr,
+      Nombre: sanitizedNombre,
+      Apellido_Paterno: sanitizedApellidoPaterno,
+      Apellido_Materno: sanitizedApellidoMaterno,
+      Correo: sanitizedCorreo,
+      Telefono: sanitizedTelefono,
       id_tipo_trabajador,
       Contraseña,
       Intentos_contraseña: 0,

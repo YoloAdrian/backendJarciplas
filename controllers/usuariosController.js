@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const FrecuenciaBloqueosUsuarios = require('../models/frecuenciaBloqueosUsuariosModel');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
+const validator = require('validator');
 
 const generarIdSesion = () => {
   return crypto.randomBytes(32).toString('hex');
@@ -22,17 +23,14 @@ const obtenerUsuarios = async (req, res) => {
 };
 
 const obtenerUsuarioPorId = async (req, res) => {
-  const id_usuarios = req.params.id_usuarios; // Cambiar a id_usuarios
   try {
-    const usuario = await Usuario.findByPk(id_usuarios);
-    if (usuario) {
-      res.json(usuario);
-    } else {
-      res.status(404).json({ message: 'Usuario no encontrado' });
+    const usuario = await Usuario.findByPk(req.params.id);
+    if (!usuario) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
+    res.status(200).json(usuario);
   } catch (error) {
-    console.error('Error al obtener el usuario:', error);
-    res.status(500).json({ message: 'Error interno al obtener el usuario' });
+    res.status(500).json({ mensaje: 'Error al obtener el usuario' });
   }
 };
 
@@ -44,7 +42,17 @@ const crearUsuario = async (req, res) => {
       return res.status(400).json({ message: 'Todos los campos son requeridos.' });
     }
 
-    const telefonoStr = String(Telefono);
+    // Sanitización y validación de entradas
+    const sanitizedNombre = validator.escape(Nombre);
+    const sanitizedApellidoPaterno = validator.escape(Apellido_Paterno);
+    const sanitizedApellidoMaterno = validator.escape(Apellido_Materno);
+    const sanitizedCorreo = validator.normalizeEmail(Correo);
+    const sanitizedTelefono = validator.escape(String(Telefono));
+    
+    if (!validator.isEmail(sanitizedCorreo)) {
+      return res.status(400).json({ message: 'Correo electrónico no válido.' });
+    }
+
     const id_sesion = generarIdSesion();
     const secret = speakeasy.generateSecret({ length: 20 });
     const mfaSecret = secret.base32;
@@ -57,18 +65,18 @@ const crearUsuario = async (req, res) => {
     });
 
     const nuevoUsuario = await Usuario.create({
-      Nombre,
-      Apellido_Paterno,
-      Apellido_Materno,
+      Nombre: sanitizedNombre,
+      Apellido_Paterno: sanitizedApellidoPaterno,
+      Apellido_Materno: sanitizedApellidoMaterno,
       Edad,
       Genero,
-      Correo,
-      Telefono: telefonoStr,
+      Correo: sanitizedCorreo,
+      Telefono: sanitizedTelefono,
       Contraseña,
       Intentos_contraseña: 0,
       id_sesion,
       id_tipo_usuario,
-      secret_mfa: mfaSecret // Guardar el secreto MFA en la base de datos
+      MFA: mfaSecret
     });
 
     res.status(201).json(nuevoUsuario);
@@ -137,7 +145,7 @@ const iniciarSesionUsuario = async (req, res) => {
     usuario.id_sesion = id_sesion;
     await usuario.save();
 
-    res.cookie('sessionId', id_sesion, {
+    res.cookie('id_sesion', id_sesion, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
