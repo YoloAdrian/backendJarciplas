@@ -16,6 +16,10 @@ const DeslindeLegal = require('./routes/deslindeRoutes');
 const HistorialDeslinde = require('./routes/historialDeslindeRoutes');
 const Terminos = require('./routes/terminosRoutes');
 const HistorialTerminos = require('./routes/historialTerminosRoutes');
+const Configuracion = require('./routes/configuracionRoutes');
+const InformacionEmpresa = require('./routes/informacionEmpresaRoutes');
+const contactoEmpresa = require('./routes/contactoEmpresaRoutes');
+const Recuperacion = require('./routes/recuperacionRoutes');
 
 dotenv.config();
 
@@ -37,13 +41,17 @@ app.use('/api', trabajadorRoutes);
 app.use('/api', usuarioRoutes);
 app.use('/api', captcha);
 app.use('/api', FrecuenciaBloqueosUsuarios);
+app.use('/api', FrecuenciaBloqueosTrabajador);
 app.use('/api', Politicas);
 app.use('/api', HistorialPoliticas);
 app.use('/api', DeslindeLegal);
 app.use('/api', HistorialDeslinde);
 app.use('/api', Terminos);
 app.use('/api', HistorialTerminos);
-
+app.use('/api', Configuracion);
+app.use('/api', InformacionEmpresa);
+app.use('/api', contactoEmpresa);
+app.use('/api', Recuperacion);
 // Conexión a la base de datos
 sequelize.sync().then(() => {
   app.listen(PORT, () => {

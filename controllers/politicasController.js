@@ -96,10 +96,30 @@ const obtenerHistorialPoliticas = async (req, res) => {
   }
 };
 
+// Obtener la política vigente
+const obtenerPoliticaVigente = async (req, res) => {
+  try {
+    const politicaVigente = await Politica.findOne({
+      where: { estado: 'vigente' },
+      order: [['fecha_vigencia', 'DESC']], // Ordenar por fecha de vigencia en caso de haber más de una
+    });
+
+    if (!politicaVigente) {
+      return res.status(404).json({ error: 'No hay políticas vigentes disponibles' });
+    }
+
+    res.json(politicaVigente);
+  } catch (error) {
+    console.error('Error al obtener la política vigente:', error);
+    res.status(500).json({ error: 'Error al obtener la política vigente' });
+  }
+};
+
 module.exports = {
   obtenerPoliticas,
   crearPolitica,
   modificarPolitica,
   marcarComoEliminada,
   obtenerHistorialPoliticas,
+  obtenerPoliticaVigente, // Añadir al export
 };

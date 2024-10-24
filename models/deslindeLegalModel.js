@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
 const DeslindeLegal = sequelize.define('DeslindeLegal', {
-  id_deslinde_legal: {
+  id_deslinde: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
@@ -21,10 +21,24 @@ const DeslindeLegal = sequelize.define('DeslindeLegal', {
   },
   fecha_creacion: {
     type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+  fecha_vigencia: {
+    type: DataTypes.DATE,
     allowNull: false
+  },
+  estado: {
+    type: DataTypes.ENUM('vigente', 'no vigente', 'eliminada'),
+    allowNull: false,
+    defaultValue: 'vigente'
+  },
+  fecha_eliminacion: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
-  tableName: 'tbl_deslinde_legal',
+  tableName: 'tbl_deslinde',
   timestamps: false
 });
 

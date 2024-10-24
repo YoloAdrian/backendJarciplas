@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const validator = require('validator');
+const Configuracion = require('../models/configuracionModel'); 
 
 const generarIdSesion = () => {
   return crypto.randomBytes(32).toString('hex');
@@ -89,13 +90,23 @@ const iniciarSesionTrabajador = async (req, res) => {
   const { Correo, Contraseña } = req.body;
 
   try {
+    // Obtener la cantidad de errores permitidos desde la configuración
+    const configuracion = await Configuracion.findByPk(1); // Asegúrate de usar 'Configuracion' correctamente
+    if (!configuracion) {
+      return res.status(500).json({ message: 'Error de configuración no disponible.' });
+    }
+
+    const cantidadErroresPermitidos = configuracion.cantidad_errores;
+
+    // Buscar el trabajador por correo
     const trabajador = await Trabajador.findOne({ where: { Correo } });
 
     if (!trabajador) {
       return res.status(401).json({ message: 'Credenciales inválidas.' });
     }
 
-    if (trabajador.Intentos_contraseña >= 5) {
+    // Verificar si la cuenta está bloqueada
+    if (trabajador.Intentos_contraseña >= cantidadErroresPermitidos) {
       const tiempoBloqueoRestante = trabajador.bloqueadoHasta - Date.now();
 
       if (tiempoBloqueoRestante > 0) {
@@ -104,17 +115,20 @@ const iniciarSesionTrabajador = async (req, res) => {
           message: `Cuenta bloqueada. Intenta de nuevo en ${segundosRestantes} segundos.`,
         });
       } else {
+        // Restablecer el contador de intentos y desbloquear la cuenta
         trabajador.Intentos_contraseña = 0;
         trabajador.bloqueadoHasta = null;
         await trabajador.save();
       }
     }
 
+    // Comparar la contraseña ingresada
     if (trabajador.Contraseña !== Contraseña) {
       trabajador.Intentos_contraseña += 1;
 
-      if (trabajador.Intentos_contraseña >= 5) {
-        trabajador.bloqueadoHasta = Date.now() + 1 * 60 * 1000;
+      // Bloquear cuenta si se alcanzó el límite de intentos
+      if (trabajador.Intentos_contraseña >= cantidadErroresPermitidos) { // Asegúrate de usar 'cantidadErroresPermitidos'
+        trabajador.bloqueadoHasta = Date.now() + 5 * 60 * 1000; // Bloquear por 1 minuto
         await FrecuenciaBloqueos.create({
           id_trabajadores: trabajador.id_trabajador,
           fecha: new Date(),
@@ -125,6 +139,7 @@ const iniciarSesionTrabajador = async (req, res) => {
       return res.status(401).json({ message: 'Credenciales inválidas.' });
     }
 
+    // Restablecer intentos y proceder con el inicio de sesión exitoso
     trabajador.Intentos_contraseña = 0;
     trabajador.bloqueadoHasta = null;
     const id_sesion = generarIdSesion();
@@ -135,7 +150,7 @@ const iniciarSesionTrabajador = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
-      maxAge: 24 * 60 * 60 * 1000
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json(trabajador);
@@ -144,6 +159,7 @@ const iniciarSesionTrabajador = async (req, res) => {
     res.status(500).json({ message: 'Error interno al iniciar sesión.' });
   }
 };
+
 
 const eliminarTrabajador = async (req, res) => {
   const id = req.params.id;

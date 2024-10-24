@@ -17,4 +17,8 @@ router.delete('/politicas/:id', politicaController.marcarComoEliminada);
 // Ruta para obtener el historial de versiones de un Documento Regulatorio por ID
 router.get('/politicas/:id/historial', politicaController.obtenerHistorialPoliticas);
 
+// Ruta para obtener la política vigente
+router.get('/politicas/vigente', politicaController.obtenerPoliticaVigente);
+
+
 module.exports = router;
