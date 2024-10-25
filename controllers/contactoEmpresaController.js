@@ -2,10 +2,10 @@ const Contacto = require('../models/contactoEmpresa');
 
 // Crear nuevo contacto
 const crearContacto = async (req, res) => {
-  const { nombre, informacion } = req.body; // Cambiado a 'nombre'
-  console.log('Datos recibidos:', req.body); // Agregar esto
+  const { nombre, informacion } = req.body; 
+  console.log('Datos recibidos:', req.body);
   try {
-    const nuevoContacto = await Contacto.create({ nombre, informacion }); // Cambiado a 'nombre'
+    const nuevoContacto = await Contacto.create({ nombre, informacion }); 
     res.status(201).json({ message: 'Contacto creado correctamente', id: nuevoContacto.id_contacto });
   } catch (error) {
     console.error(error);
@@ -27,11 +27,11 @@ const obtenerContactos = async (req, res) => {
 // Actualizar un contacto
 const actualizarContacto = async (req, res) => {
   const { id } = req.params;
-  const { nombre, informacion } = req.body; // Cambiado a 'nombre'
+  const { nombre, informacion } = req.body; 
 
   try {
     const [updated] = await Contacto.update(
-      { nombre, informacion }, // Cambiado a 'nombre'
+      { nombre, informacion }, 
       { where: { id_contacto: id } }
     );
 
