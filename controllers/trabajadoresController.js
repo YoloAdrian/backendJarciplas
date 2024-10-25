@@ -122,8 +122,8 @@ const iniciarSesionTrabajador = async (req, res) => {
       }
     }
 
-    // Comparar la contraseña ingresada (se recomienda usar bcrypt)
-    const contraseñaValida = trabajador.Contraseña === Contraseña; // Reemplazar esto por bcrypt.compare(Contraseña, trabajador.Contraseña) si es un hash
+    // Comparar la contraseña ingresada 
+    const contraseñaValida = trabajador.Contraseña === Contraseña;
 
     if (!contraseñaValida) {
       trabajador.Intentos_contraseña += 1;
