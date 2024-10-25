@@ -26,7 +26,7 @@ const Politica = sequelize.define('Politica', {
   },
   fecha_vigencia: {
     type: DataTypes.DATE,
-    allowNull: false // Este campo es importante para determinar la vigencia del documento
+    allowNull: false
   },
   estado: {
     type: DataTypes.ENUM('vigente', 'no vigente', 'eliminada'), // Campo para el estado del documento
