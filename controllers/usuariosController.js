@@ -129,7 +129,7 @@ const iniciarSesionUsuario = async (req, res) => {
 
       // Bloquear cuenta si se alcanzó el límite de intentos
       if (usuario.Intentos_contraseña >= cantidadErroresPermitidos) {
-        usuario.bloqueadoHasta = Date.now() + 5 * 60 * 1000; // Bloquear por 1 minuto
+        usuario.bloqueadoHasta = Date.now() + 5 * 60 * 1000; 
         await FrecuenciaBloqueosUsuarios.create({
           id_usuario: usuario.id_usuarios,
           fecha: new Date(),
