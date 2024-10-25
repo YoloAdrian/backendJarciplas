@@ -1,6 +1,6 @@
-// middleware/verificarSesion.js
-const Trabajador = require('../models/trabajadoresModel'); // Importa tu modelo Trabajador
-const Usuario = require('../models/usuariosModel'); // Importa tu modelo Usuario
+
+const Trabajador = require('../models/trabajadoresModel'); 
+const Usuario = require('../models/usuariosModel'); 
 
 const verificarSesion = async (req, res, next) => {
   const idSesion = req.cookies.id_sesion; // Obtén el id_sesion de las cookies
@@ -10,7 +10,7 @@ const verificarSesion = async (req, res, next) => {
   }
 
   try {
-    // Buscar en la base de datos si la sesión es válida (tanto en trabajadores como en usuarios)
+    // Buscar en la base de datos si la sesión es válida 
     const trabajador = await Trabajador.findOne({ where: { id_sesion: idSesion } });
     const usuario = await Usuario.findOne({ where: { id_sesion: idSesion } });
 
