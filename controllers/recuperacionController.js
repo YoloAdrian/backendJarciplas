@@ -2,7 +2,7 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 const Usuario = require('../models/usuariosModel');
 const crypto = require('crypto');
-const validator = require('validator'); // Importar la librería validator
+const validator = require('validator'); 
 const speakeasy = require('speakeasy');
 
 const generarIdSesion = () => {
@@ -14,17 +14,17 @@ let recoveryCode; // Variable para almacenar el código de verificación
 let datosUsuarioTemp; 
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // Especifica el servicio de correo (en este caso, Gmail)
+  service: 'gmail', 
   auth: {
-    user: 'ironsafe3@gmail.com', // Correo electrónico desde el .env
-    pass: 'bhiu pxxu gymn xbyo', // Contraseña o contraseña de aplicación desde el .env
+    user: 'ironsafe3@gmail.com',
+    pass: 'bhiu pxxu gymn xbyo', 
   },
 });
 
-// Controlador para solicitar la recuperación de contraseña
+
 const solicitarRecuperacion = async (req, res) => {
-  const { email, datosUsuario } = req.body; // Recibir solo el correo y almacenar los datos temporalmente
-  datosUsuarioTemp = datosUsuario; // Almacenar los datos temporalmente
+  const { email, datosUsuario } = req.body; 
+  datosUsuarioTemp = datosUsuario; 
 
   try {
     const user = await Usuario.findOne({ where: { Correo: email } });
@@ -45,7 +45,7 @@ const solicitarRecuperacion = async (req, res) => {
 // Función para enviar el correo electrónico
 const enviarCorreo = async (correo) => {
   const mailOptions = {
-    from: `"Tu Nombre" <${process.env.EMAIL_USER}>`, // Cambiar por tu email
+    from: `"Tu Nombre" <${process.env.EMAIL_USER}>`, 
     to: correo,
     subject: 'Código de verificación',
     html: `<p>Hola,</p>
@@ -56,11 +56,11 @@ const enviarCorreo = async (correo) => {
 
   // Envío del correo electrónico
   try {
-    console.log(`Enviando correo a: ${correo}`); // Muestra a quién se envía el correo
+    console.log(`Enviando correo a: ${correo}`); 
     await transporter.sendMail(mailOptions);
-    console.log('Correo electrónico enviado exitosamente'); // Confirma el envío
+    console.log('Correo electrónico enviado exitosamente'); 
   } catch (error) {
-    console.error('Error al enviar el correo electrónico:', error); // Captura y muestra el error
+    console.error('Error al enviar el correo electrónico:', error); 
   }
 };
 
@@ -81,7 +81,7 @@ const verificarCodigo = async (req, res) => {
           'Correo', 
           'Telefono', 
           'Contraseña', 
-          'id_tipo_usuario' // Asegúrate de que este campo esté incluido
+          'id_tipo_usuario' 
         ];
         
         for (const campo of camposRequeridos) {
@@ -115,14 +115,14 @@ const verificarCodigo = async (req, res) => {
           Genero: datosUsuario.Genero,
           Correo: sanitizedCorreo,
           Telefono: sanitizedTelefono,
-          Contraseña: datosUsuario.Contraseña, // Asegúrate de que la contraseña esté hasheada
+          Contraseña: datosUsuario.Contraseña, 
           Intentos_contraseña: 0,
           id_sesion,
-          id_tipo_usuario: datosUsuario.id_tipo_usuario, // Asegúrate de que se pase este campo
+          id_tipo_usuario: datosUsuario.id_tipo_usuario, 
           MFA: mfaSecret
         });
   
-        // Reiniciar el código de recuperación
+       
         recoveryCode = null; 
         return res.json({ message: 'Código verificado correctamente. Usuario creado.', usuario: nuevoUsuario });
       } else {
