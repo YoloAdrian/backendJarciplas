@@ -24,7 +24,7 @@ const Recuperacion = require('./routes/recuperacionRoutes');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.PORT || 3001;
 
 // Middleware para parsear JSON
 app.use(express.json());
