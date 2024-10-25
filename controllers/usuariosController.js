@@ -247,72 +247,6 @@ const verificarTokenMFA = async (req, res) => {
 };
 
 
-// Función para generar el código QR y el secret para MFA
-const generarMFAQR = async (req, res) => {
-  const id_usuarios = req.params.id_usuarios;
-
-  try {
-    const usuario = await Usuario.findByPk(id_usuarios);
-    if (!usuario) {
-      return res.status(404).json({ message: 'Usuario no encontrado.' });
-    }
-
-    const secret = speakeasy.generateSecret({
-      name: 'TuApp (Usuario)',
-    });
-
-    usuario.MFA = secret.base32; // Guardar en el campo correcto
-    await usuario.save();
-
-    QRCode.toDataURL(secret.otpauth_url, (err, dataUrl) => {
-      if (err) {
-        console.error('Error al generar el código QR:', err);
-        return res.status(500).json({ message: 'Error interno al generar el código QR.' });
-      }
-      res.status(200).json({ qrCode: dataUrl });
-    });
-  } catch (error) {
-    console.error('Error al generar MFA:', error);
-    res.status(500).json({ message: 'Error interno al generar MFA.' });
-  }
-};
-
-
-// Función para verificar el token MFA
-const verificarTokenMFA = async (req, res) => {
-  const id_usuarios = req.params.id_usuarios; 
-  const { token } = req.body;
-
-  try {
-    const usuario = await Usuario.findByPk(id_usuarios);
-    if (!usuario) {
-      return res.status(404).json({ message: 'Usuario no encontrado.' });
-    }
-
-    const secret = usuario.MFA;
-
-    if (!secret) {
-      return res.status(400).json({ message: 'MFA no configurado para este usuario.' });
-    }
-
-    const tokenValido = speakeasy.totp.verify({
-      secret: secret,
-      encoding: 'base32',
-      token: token,
-    });
-
-    if (tokenValido) {
-      res.status(200).json({ message: 'Autenticación MFA exitosa.' });
-    } else {
-      res.status(401).json({ message: 'Token MFA inválido.' });
-    }
-  } catch (error) {
-    console.error('Error al verificar MFA:', error);
-    res.status(500).json({ message: 'Error interno al verificar MFA.' });
-  }
-};
-
-
 const eliminarUsuario = async (req, res) => {
   const id_usuarios = req.params.id_usuarios; // Cambiar a id_usuarios
 
@@ -379,3 +313,4 @@ module.exports = {
   generarMFAQR, 
   verificarTokenMFA, 
 };
+
