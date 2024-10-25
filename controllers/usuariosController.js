@@ -134,7 +134,7 @@ const iniciarSesionUsuario = async (req, res) => {
           id_usuario: usuario.id_usuarios,
           fecha: new Date(),
         });
-        await trabajador.save();
+        await usuario.save();
         return res.status(403).json({ message: 'Cuenta bloqueada temporalmente por intentos fallidos.' });
       }
 
