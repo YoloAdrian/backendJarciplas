@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const Trabajador = require('./trabajadoresModel'); // Asegúrate de que esta ruta sea correcta
-
+const Trabajador = require('./trabajadoresModel');
 const FrecuenciaBloqueoTrabajadores = sequelize.define('FrecuenciaBloqueoTrabajadores', {
   id_bloqueos: {
     type: DataTypes.INTEGER,
