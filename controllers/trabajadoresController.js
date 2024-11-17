@@ -1,6 +1,6 @@
 const axios = require('axios');
+const bcrypt = require('bcrypt');
 const Trabajador = require('../models/trabajadoresModel');
-const Usuario = require('../models/usuariosModel');
 const FrecuenciaBloqueos = require('../models/frecuenciaBloqueosTrabajadoresModel');
 const crypto = require('crypto');
 const speakeasy = require('speakeasy');
@@ -53,6 +53,11 @@ const crearTrabajador = async (req, res) => {
       return res.status(400).json({ message: 'Correo electrónico no válido.' });
     }
 
+    // Generar el hash de la contraseña con bcrypt
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(Contraseña, saltRounds);
+    console.log("Hash generado durante el registro:", hashedPassword);
+    console.log("Longitud del hash generado:", hashedPassword.length);
     const id_sesion = generarIdSesion();
     const secret = speakeasy.generateSecret({ length: 20 });
     const mfaSecret = secret.base32;
@@ -71,7 +76,7 @@ const crearTrabajador = async (req, res) => {
       Correo: sanitizedCorreo,
       Telefono: sanitizedTelefono,
       id_tipo_trabajador,
-      Contraseña,
+      Contraseña: hashedPassword,
       Intentos_contraseña: 0,
       id_sesion,
       Edad,
@@ -90,49 +95,67 @@ const iniciarSesionTrabajador = async (req, res) => {
   const { Correo, Contraseña } = req.body;
 
   try {
+    console.log("Iniciando sesión para:", Correo); // Log para verificar el correo recibido
+
     // Obtener la cantidad de errores permitidos desde la configuración
-    const configuracion = await Configuracion.findByPk(1); // Asegúrate de usar 'Configuracion' correctamente
+    const configuracion = await Configuracion.findByPk(1);
     if (!configuracion) {
+      console.error("Error: No se encontró la configuración.");
       return res.status(500).json({ message: 'Error de configuración no disponible.' });
     }
 
     const cantidadErroresPermitidos = configuracion.cantidad_errores;
+    console.log("Cantidad de errores permitidos:", cantidadErroresPermitidos);
 
     // Buscar el trabajador por correo
     const trabajador = await Trabajador.findOne({ where: { Correo } });
-
     if (!trabajador) {
+      console.warn("Trabajador no encontrado con el correo:", Correo);
       return res.status(401).json({ message: 'Credenciales inválidas.' });
     }
 
-    // Verificar si la cuenta está bloqueada
-    if (trabajador.Intentos_contraseña >= cantidadErroresPermitidos) {
-      const tiempoBloqueoRestante = trabajador.bloqueadoHasta - Date.now();
+    console.log("Trabajador encontrado:", trabajador.Nombre);
 
+    // Verificar si la cuenta está bloqueada
+    if (trabajador.bloqueadoHasta && trabajador.Intentos_contraseña >= cantidadErroresPermitidos) {
+      const tiempoBloqueoRestante = trabajador.bloqueadoHasta - Date.now();
       if (tiempoBloqueoRestante > 0) {
         const segundosRestantes = Math.floor(tiempoBloqueoRestante / 1000);
+        console.warn("Cuenta bloqueada. Tiempo restante:", segundosRestantes, "segundos.");
         return res.status(403).json({
           message: `Cuenta bloqueada. Intenta de nuevo en ${segundosRestantes} segundos.`,
         });
       } else {
         // Restablecer el contador de intentos y desbloquear la cuenta
+        console.log("Desbloqueando la cuenta y restableciendo intentos.");
         trabajador.Intentos_contraseña = 0;
         trabajador.bloqueadoHasta = null;
         await trabajador.save();
       }
     }
 
-    // Comparar la contraseña ingresada
-    if (trabajador.Contraseña !== Contraseña) {
-      trabajador.Intentos_contraseña += 1;
+    // Comparar la contraseña ingresada con la contraseña encriptada
+    console.log("Comparando contraseñas...");
+    const contraseñaValida = await bcrypt.compare(Contraseña, trabajador.Contraseña);
+    console.log("Longitud del hash desde la BD:", trabajador.Contraseña.length);
+    console.log("Contraseña ingresada:", Contraseña);
+    console.log("Contraseña en BD (hashed):", trabajador.Contraseña);
+    console.log("¿Contraseña válida?:", contraseñaValida);
 
-      // Bloquear cuenta si se alcanzó el límite de intentos
-      if (trabajador.Intentos_contraseña >= cantidadErroresPermitidos) { // Asegúrate de usar 'cantidadErroresPermitidos'
-        trabajador.bloqueadoHasta = Date.now() + 5 * 60 * 1000; // Bloquear por 1 minuto
+    if (!contraseñaValida) {
+      trabajador.Intentos_contraseña += 1;
+      console.warn("Contraseña incorrecta. Intentos de contraseña fallidos:", trabajador.Intentos_contraseña);
+
+      if (trabajador.Intentos_contraseña >= cantidadErroresPermitidos) {
+        trabajador.bloqueadoHasta = Date.now() + 5 * 60 * 1000; // Bloquear por 5 minutos
+        console.warn("Cuenta bloqueada temporalmente.");
+        
         await FrecuenciaBloqueos.create({
           id_trabajadores: trabajador.id_trabajador,
           fecha: new Date(),
         });
+        await trabajador.save();
+        return res.status(403).json({ message: 'Cuenta bloqueada temporalmente por intentos fallidos.' });
       }
 
       await trabajador.save();
@@ -145,6 +168,8 @@ const iniciarSesionTrabajador = async (req, res) => {
     const id_sesion = generarIdSesion();
     trabajador.id_sesion = id_sesion;
     await trabajador.save();
+
+    console.log("Inicio de sesión exitoso para:", trabajador.Nombre);
 
     res.cookie('sessionId', id_sesion, {
       httpOnly: true,
@@ -182,7 +207,7 @@ const eliminarTrabajador = async (req, res) => {
 
 const cambiarRol = async (req, res) => {
   const id = req.params.id;
-  const { nuevoTipoUsuario } = req.body;
+  const { nuevoTipotrabajador } = req.body;
 
   try {
     const trabajador = await Trabajador.findByPk(id);
@@ -190,11 +215,12 @@ const cambiarRol = async (req, res) => {
       return res.status(404).json({ message: 'Trabajador no encontrado.' });
     }
 
-    if (!nuevoTipoUsuario) {
-      return res.status(400).json({ message: 'El nuevo tipo de usuario es requerido.' });
+    if (!nuevoTipotrabajador) {
+      return res.status(400).json({ message: 'El nuevo tipo de trabajador es requerido.' });
     }
 
-    const nuevoUsuario = await Usuario.create({
+    // Crear un nuevo trabajador con id_tipo_trabajador fijo como público (2)
+    const nuevotrabajador = await trabajador.create({
       Nombre: trabajador.Nombre,
       Apellido_Paterno: trabajador.Apellido_Paterno,
       Apellido_Materno: trabajador.Apellido_Materno,
@@ -205,44 +231,62 @@ const cambiarRol = async (req, res) => {
       Contraseña: trabajador.Contraseña,
       Intentos_contraseña: trabajador.Intentos_contraseña,
       id_sesion: trabajador.id_sesion,
-      id_tipo_usuario: trabajador.id_tipo_trabajador,
+      id_tipo_trabajador: 2, // Forzar el rol a "público"
       MFA: trabajador.MFA
     });
 
+    // Eliminar al trabajador de la tabla trabajadores
     await trabajador.destroy();
-    res.status(201).json(nuevoUsuario);
+
+    res.status(201).json(nuevotrabajador);
   } catch (error) {
     console.error('Error al cambiar rol del trabajador:', error);
     res.status(500).json({ message: 'Error interno al cambiar el rol del trabajador' });
   }
 };
 
+
+// Función para generar el código QR y el secret para MFA
 const generarMFAQR = async (req, res) => {
   const id_trabajador = req.params.id_trabajador;
+  console.log('Recibida solicitud para generar MFA para trabajador con ID:', id_trabajador); // Log inicial
 
   try {
+    // Buscar el trabajador por ID
     const trabajador = await Trabajador.findByPk(id_trabajador);
+    console.log('trabajador encontrado:', trabajador ? trabajador.Correo : 'No encontrado'); // Log del trabajador
+
     if (!trabajador) {
-      return res.status(404).json({ message: 'Trabajador no encontrado.' });
+      return res.status(404).json({ message: 'trabajador no encontrado.' });
     }
 
+    // Generar un secreto para el trabajador
     const secret = speakeasy.generateSecret({
-      name: 'TuApp (Trabajador)',
+      name: `TuApp (trabajador)`,
     });
+    console.log('Secreto generado:', secret); // Log del secreto generado
 
-    trabajador.MFA = secret.base32; // Guardar el secreto MFA en el campo correspondiente
+    // Guardar el secreto en la base de datos
+    trabajador.MFA = secret.base32;
     await trabajador.save();
+    console.log('Secreto MFA guardado para el trabajador:', trabajador.Correo); // Confirmación de guardado
 
+    // Generar el QR
     QRCode.toDataURL(secret.otpauth_url, (err, dataUrl) => {
       if (err) {
         console.error('Error al generar el código QR:', err);
         return res.status(500).json({ message: 'Error interno al generar el código QR.' });
       }
-      res.status(200).json({ qrCode: dataUrl });
+
+      console.log('Código QR generado correctamente para el trabajador:', trabajador.Correo); // Confirmación del QR
+      res.status(200).json({
+        qr: dataUrl,
+        secret: secret.base32,
+      });
     });
   } catch (error) {
-    console.error('Error al generar MFA:', error);
-    res.status(500).json({ message: 'Error interno al generar MFA.' });
+    console.error('Error al generar QR MFA:', error); // Log de errores
+    res.status(500).json({ message: 'Error interno al generar QR MFA.' });
   }
 };
 
