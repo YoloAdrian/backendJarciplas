@@ -146,8 +146,9 @@ const solicitarRecuperacionContrasena = async (req, res) => {
       return res.status(404).json({ message: 'No se encontró ningún usuario con ese correo.' });
     }
 
-    // Generar un token único
-    const token = crypto.randomBytes(20).toString('hex');
+    // Generar un token de 6 caracteres al azar
+    const token = Math.random().toString(36).substr(2, 6); // Genera un token de 6 caracteres
+
     tokensRecuperacion[email] = { token, tipo: usuario ? 'usuario' : 'trabajador', timestamp: Date.now() };
 
     // Enviar el correo
@@ -169,6 +170,7 @@ const solicitarRecuperacionContrasena = async (req, res) => {
     return res.status(500).json({ message: 'Error al procesar la solicitud. Intenta de nuevo.' });
   }
 };
+
 
 // Nueva función: Verificar token y cambiar la contraseña
 const cambiarContrasena = async (req, res) => {
