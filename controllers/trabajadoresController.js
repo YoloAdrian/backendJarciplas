@@ -7,6 +7,7 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const validator = require('validator');
 const Configuracion = require('../models/configuracionModel'); 
+const Usuario = require('../models/usuariosModel'); // Asegúrate de que la ruta sea correcta
 
 const generarIdSesion = () => {
   return crypto.randomBytes(32).toString('hex');
@@ -207,7 +208,7 @@ const eliminarTrabajador = async (req, res) => {
 
 const cambiarRol = async (req, res) => {
   const id = req.params.id;
-  const { nuevoTipotrabajador } = req.body;
+  const { nuevoTipoUsuario } = req.body;
 
   try {
     const trabajador = await Trabajador.findByPk(id);
@@ -215,12 +216,11 @@ const cambiarRol = async (req, res) => {
       return res.status(404).json({ message: 'Trabajador no encontrado.' });
     }
 
-    if (!nuevoTipotrabajador) {
-      return res.status(400).json({ message: 'El nuevo tipo de trabajador es requerido.' });
+    if (!nuevoTipoUsuario) {
+      return res.status(400).json({ message: 'El nuevo tipo de usuario es requerido.' });
     }
 
-    // Crear un nuevo trabajador con id_tipo_trabajador fijo como público (2)
-    const nuevotrabajador = await trabajador.create({
+    const nuevoUsuario = await Usuario.create({
       Nombre: trabajador.Nombre,
       Apellido_Paterno: trabajador.Apellido_Paterno,
       Apellido_Materno: trabajador.Apellido_Materno,
@@ -231,19 +231,18 @@ const cambiarRol = async (req, res) => {
       Contraseña: trabajador.Contraseña,
       Intentos_contraseña: trabajador.Intentos_contraseña,
       id_sesion: trabajador.id_sesion,
-      id_tipo_trabajador: 2, // Forzar el rol a "público"
+      id_tipo_usuario: 2,
       MFA: trabajador.MFA
     });
 
-    // Eliminar al trabajador de la tabla trabajadores
     await trabajador.destroy();
-
-    res.status(201).json(nuevotrabajador);
+    res.status(201).json(nuevoUsuario);
   } catch (error) {
-    console.error('Error al cambiar rol del trabajador:', error);
-    res.status(500).json({ message: 'Error interno al cambiar el rol del trabajador' });
+    console.error('Error al cambiar rol del trabajador:', error.stack || error.message);
+    res.status(500).json({ message: 'Error interno al cambiar el rol del trabajador', error: error.stack || error.message });
   }
 };
+
 
 
 // Función para generar el código QR y el secret para MFA
