@@ -10,7 +10,7 @@ const Configuracion = sequelize.define('tbl_configuracion', {
   },
   cantidad_errores: {
     type: DataTypes.INTEGER,
-    allowNull: false, // Permite null si lo deseas, de lo contrario pon false
+    allowNull: false, 
   },
 }, {
   timestamps: false,

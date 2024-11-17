@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const TipoUsuario = require('./tipo_UsuarioModel'); // Cambiado a TipoUsuario
+const TipoUsuario = require('./tipo_UsuarioModel'); 
 
 const Trabajador = sequelize.define('Trabajador', {
   id_trabajador: {
@@ -64,7 +64,7 @@ const Trabajador = sequelize.define('Trabajador', {
     allowNull: false,
   },
 }, {
-  tableName: 'tbl_trabajadores', // Si decides cambiar el nombre de la tabla en la base de datos, cámbialo aquí también
+  tableName: 'tbl_trabajadores', 
   timestamps: false,
 });
 

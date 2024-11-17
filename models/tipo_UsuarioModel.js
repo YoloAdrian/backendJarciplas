@@ -12,7 +12,7 @@ const TipoUsuario = sequelize.define('TipoUsuario', {
     allowNull: false,
   },
 }, {
-  tableName: 'tbl_tipo_usuarios', // Asegúrate de que coincida con el nombre de la tabla
+  tableName: 'tbl_tipo_usuarios', 
   timestamps: false,
 });
 

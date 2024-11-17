@@ -1,11 +1,11 @@
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
-const Usuario = require('../models/usuariosModel'); // Si vas a usarlo con usuarios
-const Trabajador = require('../models/trabajadoresModel'); // Si vas a usarlo con trabajadores
+const Usuario = require('../models/usuariosModel'); 
+const Trabajador = require('../models/trabajadoresModel'); 
 
 // Función para generar el código QR y el secret para MFA
 const generarMFAQR = async (req, res) => {
-  const { tipo, id } = req.params; // tipo puede ser 'usuario' o 'trabajador'
+  const { tipo, id } = req.params; 
 
   try {
     // Generar el secret único para MFA
@@ -25,7 +25,7 @@ const generarMFAQR = async (req, res) => {
       return res.status(404).json({ message: `${tipo} no encontrado.` });
     }
 
-    // Guardar el secret en la base de datos (puedes encriptarlo si lo prefieres)
+    // Guardar el secret en la base de datos 
     entidad.secret_mfa = secret.base32;
     await entidad.save();
 
@@ -46,7 +46,7 @@ const generarMFAQR = async (req, res) => {
 
 // Función para verificar el token MFA
 const verificarTokenMFA = async (req, res) => {
-  const { tipo, id } = req.params; // tipo puede ser 'usuario' o 'trabajador'
+  const { tipo, id } = req.params;
   const { token } = req.body;
 
   try {

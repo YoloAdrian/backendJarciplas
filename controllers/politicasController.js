@@ -12,7 +12,7 @@ const obtenerPoliticas = async (req, res) => {
 
 const crearPolitica = async (req, res) => {
   try {
-    const { titulo, contenido } = req.body; // Se eliminó fecha_vigencia del body
+    const { titulo, contenido } = req.body; 
 
     if (!titulo || !contenido) {
       return res.status(400).json({ error: 'Todos los campos son requeridos' });

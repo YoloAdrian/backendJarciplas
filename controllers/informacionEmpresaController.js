@@ -56,8 +56,8 @@ const obtenerLogoEmpresa = async (req, res) => {
         return res.status(404).json({ message: 'Empresa no encontrada' });
       }
   
-      // Establecer el tipo de contenido y enviar el logo
-      res.set('Content-Type', 'image/jpg'); // o el tipo de imagen correspondiente
+      // Establecer el tipo de contenido 
+      res.set('Content-Type', 'image/jpg'); 
       res.send(empresa.logo);
     } catch (error) {
       console.error(error);

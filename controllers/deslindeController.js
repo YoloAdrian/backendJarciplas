@@ -128,6 +128,6 @@ module.exports = {
   modificarDeslindeLegal,
   marcarComoEliminado,
   obtenerHistorialDeslindes,
-  obtenerDeslindeVigente, // Añadir al export
+  obtenerDeslindeVigente,
 };
 

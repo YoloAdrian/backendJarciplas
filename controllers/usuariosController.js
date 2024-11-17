@@ -8,6 +8,8 @@ const QRCode = require('qrcode');
 const validator = require('validator');
 const Configuracion = require('../models/configuracionModel');
 const bcrypt = require('bcrypt'); // Importar bcrypt para el hashing de contraseñas
+const Configuracion = require('../models/configuracionModel');
+const bcrypt = require('bcrypt'); // Importar bcrypt para el hashing de contraseñas
 
 const generarIdSesion = () => {
   return crypto.randomBytes(32).toString('hex');
@@ -58,6 +60,10 @@ const crearUsuario = async (req, res) => {
     const saltRounds = 10; // Puedes ajustar esto según la seguridad deseada
     const hashedContraseña = await bcrypt.hash(Contraseña, saltRounds);
 
+    // Hash de la contraseña
+    const saltRounds = 10; // Puedes ajustar esto según la seguridad deseada
+    const hashedContraseña = await bcrypt.hash(Contraseña, saltRounds);
+
     const id_sesion = generarIdSesion();
     const secret = speakeasy.generateSecret({ length: 20 });
     const mfaSecret = secret.base32;
@@ -77,6 +83,7 @@ const crearUsuario = async (req, res) => {
       Genero,
       Correo: sanitizedCorreo,
       Telefono: sanitizedTelefono,
+      Contraseña: hashedContraseña, // Guarda la contraseña hasheada
       Contraseña: hashedContraseña, // Guarda la contraseña hasheada
       Intentos_contraseña: 0,
       id_sesion,
@@ -279,14 +286,12 @@ const generarMFAQR = async (req, res) => {
   }
 };
 
-
 // Función para verificar el token MFA
 const verificarTokenMFA = async (req, res) => {
-  const id_usuarios = req.params.id_usuarios; 
-  const { token } = req.body;
+  const { tokenMFA, id_usuario } = req.body;
 
   try {
-    const usuario = await Usuario.findByPk(id_usuarios);
+    const usuario = await Usuario.findByPk(id_usuario);
     if (!usuario) {
       return res.status(404).json({ message: 'usuario no encontrado.' });
     }
@@ -298,15 +303,13 @@ const verificarTokenMFA = async (req, res) => {
     }
 
     const tokenValido = speakeasy.totp.verify({
-      secret: secret,
+      secret: usuario.MFA,
       encoding: 'base32',
-      token: token,
+      token: tokenMFA,
     });
 
-    if (tokenValido) {
-      res.status(200).json({ message: 'Autenticación MFA exitosa.' });
-    } else {
-      res.status(401).json({ message: 'Token MFA inválido.' });
+    if (!tokenValido) {
+      return res.status(401).json({ message: 'Token MFA inválido.' });
     }
   } catch (error) {
     console.error('Error al verificar MFA:', error);
@@ -321,6 +324,8 @@ module.exports = {
   iniciarSesionUsuario,
   eliminarUsuario,
   cambiarRolUsuario,
+  generarMFAQR,
+  verificarTokenMFA,
   generarMFAQR,
   verificarTokenMFA,
 };

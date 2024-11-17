@@ -14,8 +14,8 @@ let recoveryCode; // Variable para almacenar el código de verificación
 const transporter = nodemailer.createTransport({
   service: 'gmail', // Especifica el servicio de correo (en este caso, Gmail)
   auth: {
-    user: 'ironsafe3@gmail.com', // Correo electrónico desde el .env
-    pass: 'bhiu pxxu gymn xbyo', // Contraseña o contraseña de aplicación desde el .env
+    user: process.env.EMAIL_USER, // Correo electrónico desde el .env
+    pass: process.env.EMAIL_PASS, // Contraseña o contraseña de aplicación desde el .env
   },
 });
 
@@ -43,6 +43,7 @@ const solicitarRecuperacion = async (req, res) => {
 // Función para enviar el correo electrónico
 const enviarCorreo = async (correo) => {
   const mailOptions = {
+    from: `"Hola" <${process.env.EMAIL_USER}>`, // Cambiar por tu email
     from: `"Hola" <${process.env.EMAIL_USER}>`, // Cambiar por tu email
     to: correo,
     subject: 'Código de verificación',

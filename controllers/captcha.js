@@ -3,7 +3,7 @@ const axios = require('axios');
 const verificarCaptcha = async (req, res) => {
   const { captchaToken } = req.body;
 
-  // Reemplaza 'TU_CLAVE_SECRETA' con tu clave secreta de reCAPTCHA
+  
   const secretKey = '6Ld-o2AqAAAAAKA-_GSvi9OYUMCox_x2Cojr9lYI';
 
   try {
