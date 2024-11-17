@@ -1,8 +1,8 @@
 const axios = require('axios');
 const Usuario = require('../models/usuariosModel');
-const TipoUsuario = require('../models/tipo_UsuarioModel');
+const Trabajador = require('../models/trabajadoresModel')
 const crypto = require('crypto');
-const FrecuenciaBloqueosUsuarios = require('../models/frecuenciaBloqueosUsuariosModel');
+const FrecuenciaBloqueos = require('../models/frecuenciaBloqueosUsuariosModel');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const validator = require('validator');
@@ -142,6 +142,14 @@ const iniciarSesionUsuario = async (req, res) => {
       if (usuario.Intentos_contraseña >= cantidadErroresPermitidos) {
         console.log('Cuenta bloqueada temporalmente.');
         usuario.bloqueadoHasta = Date.now() + 5 * 60 * 1000; // Bloquear por 5 minutos
+        console.warn("Cuenta bloqueada temporalmente.");
+              
+        await FrecuenciaBloqueos.create({
+          id_usuario: usuario.id_usuarios,
+          fecha: new Date(),
+        });
+        await usuario.save();
+        return res.status(403).json({ message: 'Cuenta bloqueada temporalmente por intentos fallidos.' });
       }
       await usuario.save();
       return res.status(401).json({ message: 'Credenciales inválidas.' });
@@ -193,7 +201,7 @@ const eliminarUsuario = async (req, res) => {
 
 
 const cambiarRolUsuario = async (req, res) => {
-  const { id_usuarios } = req.params;
+  const id_usuarios = req.params.id_usuarios; 
   const { id_tipo_usuario } = req.body;
 
   try {
@@ -204,15 +212,13 @@ const cambiarRolUsuario = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // Si el nuevo rol no es usuario, solo se actualiza el rol
-    if (id_tipo_usuario !== 1) {
-      usuario.id_tipo_usuario = id_tipo_usuario;
-      await usuario.save();
-      return res.status(200).json(usuario);
+    if (!id_tipo_usuario) {
+      return res.status(400).json({ message: 'El nuevo tipo de usuario es requerido.' });
     }
 
+
     // Si el nuevo rol es usuario, migramos el usuario a la tabla de usuarioes
-    const nuevousuario = await usuario.create({
+    const nuevousuario = await Trabajador.create({
       Nombre: usuario.Nombre,
       Apellido_Paterno: usuario.Apellido_Paterno,
       Apellido_Materno: usuario.Apellido_Materno,
@@ -223,7 +229,7 @@ const cambiarRolUsuario = async (req, res) => {
       Contraseña: usuario.Contraseña,
       Intentos_contraseña: usuario.Intentos_contraseña,
       id_sesion: usuario.id_sesion,
-      id_tipo_usuario: 1, // Tipo de usuario
+      id_tipo_trabajador: 1,  // Cambié a 'id_tipo_trabajador'
       MFA: usuario.MFA
     });
 
@@ -233,8 +239,8 @@ const cambiarRolUsuario = async (req, res) => {
     console.log('Usuario migrado a usuario:', nuevousuario);
     res.status(201).json(nuevousuario);
   } catch (error) {
-    console.error('Error al cambiar el rol del usuario:', error);
-    res.status(500).json({ message: 'Error interno al cambiar el rol del usuario' });
+    console.error('Error al crear el trabajador:', error.message);
+    return res.status(500).json({ message: 'Error al crear el trabajador', error: error.message });
   }
 };
 
@@ -328,4 +334,3 @@ module.exports = {
   generarMFAQR,
   verificarTokenMFA,
 };
-
