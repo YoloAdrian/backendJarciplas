@@ -14,8 +14,8 @@ let recoveryCode; // Variable para almacenar el código de verificación
 const transporter = nodemailer.createTransport({
   service: 'gmail', // Especifica el servicio de correo (en este caso, Gmail)
   auth: {
-    user: process.env.EMAIL_USER, // Correo electrónico desde el .env
-    pass: process.env.EMAIL_PASS, // Contraseña o contraseña de aplicación desde el .env
+    user: 'ironsafe3@gmail.com', // Correo electrónico desde el .env
+    pass: 'bhiu pxxu gymn xbyo', // Contraseña o contraseña de aplicación desde el .env
   },
 });
 
@@ -43,7 +43,6 @@ const solicitarRecuperacion = async (req, res) => {
 // Función para enviar el correo electrónico
 const enviarCorreo = async (correo) => {
   const mailOptions = {
-    from: `"Hola" <${process.env.EMAIL_USER}>`, // Cambiar por tu email
     from: `"Hola" <${process.env.EMAIL_USER}>`, // Cambiar por tu email
     to: correo,
     subject: 'Código de verificación',
@@ -147,9 +146,8 @@ const solicitarRecuperacionContrasena = async (req, res) => {
       return res.status(404).json({ message: 'No se encontró ningún usuario con ese correo.' });
     }
 
-    // Generar un token de 6 caracteres al azar
-    const token = Math.random().toString(36).substr(2, 6); // Genera un token de 6 caracteres
-
+    // Generar un token único
+    const token = crypto.randomBytes(20).toString('hex');
     tokensRecuperacion[email] = { token, tipo: usuario ? 'usuario' : 'trabajador', timestamp: Date.now() };
 
     // Enviar el correo
@@ -171,7 +169,6 @@ const solicitarRecuperacionContrasena = async (req, res) => {
     return res.status(500).json({ message: 'Error al procesar la solicitud. Intenta de nuevo.' });
   }
 };
-
 
 // Nueva función: Verificar token y cambiar la contraseña
 const cambiarContrasena = async (req, res) => {
